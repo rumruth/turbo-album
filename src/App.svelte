@@ -5,6 +5,7 @@
 	let directory;
 	let files;
 	let before;
+	let data;
 
 	ipcRenderer.on('directory', (event, arg) => {
 		directory = arg.directory;
@@ -12,6 +13,12 @@
 		before = path.normalize(path.join(directory, '..'));
 
 		console.log(before);
+	});
+
+	ipcRenderer.on('data', (event, arg) => {
+		data = arg;
+
+		console.log("Stats", arg);
 	});
 </script>
 
@@ -21,47 +28,66 @@
 			<button on:click={() => ipcRenderer.send('select')}>Select a directory</button>
 		</div>
 	{:else}
-		<div class="file-browser">
-			<div class="directory-url">{directory}</div>
-			<ul class="directory-files">
-				{#if before}
-					<li>
-						<a
-							class="file"
-							href="{before}"
-							on:click|preventDefault={
-								() => ipcRenderer.send('select', before)
-							}
-						>
-							<span class="file-icon">←</span>
-							<span class="file-name">..</span>
-						</a>
-					</li>
-				{/if}
-				{#each files as file}
-					<li>
-						{#if file.isDirectory}
+		<div class="file-split">
+			<div class="file-browser">
+				<div class="directory-url">{directory}</div>
+				<ul class="directory-files">
+					{#if before}
+						<li>
 							<a
 								class="file"
-								href="{file.addr}"
+								href="{before}"
 								on:click|preventDefault={
-									() => ipcRenderer.send('select', file.addr)
+									() => ipcRenderer.send('select', before)
 								}
 							>
-								<span class="file-icon">🗀</span>
-								<span class="file-name">{file.name}</span>
+								<span class="file-icon">←</span>
+								<span class="file-name">..</span>
 							</a>
-						{:else}
-							<span
-								class="file"
-							>
-								<span class="file-icon">🗎</span>
-								<span class="file-name">{file.name}</span>
-							</span>
-						{/if}
-					</li>
-				{/each}
-			</ul>
+						</li>
+					{/if}
+					{#each files as file}
+						<li>
+							{#if file.isDirectory}
+								<a
+									class="file"
+									href="{file.addr}"
+									on:click|preventDefault={
+										() => ipcRenderer.send('select', file.addr)
+									}
+								>
+									<span class="file-icon">🗀</span>
+									<span class="file-name">{file.name}</span>
+								</a>
+							{:else}
+								<a
+									class="file"
+									href="{file.addr}"
+									on:click|preventDefault={
+										() => ipcRenderer.send('data', file.addr)
+									}
+								>
+									<span class="file-icon">🗎</span>
+									<span class="file-name">{file.name}</span>
+								</a>
+							{/if}
+						</li>
+					{/each}
+				</ul>
+			</div>
+			{#if data}
+				<div class="file-info">
+					<img class="data-image" src="{data.dir}"><br>
+					<div class="data">
+						<div class="data-left">Name:</div>
+						<div class="data-left">{data.name}</div>
+					</div>
+					<div class="data">
+						<div class="data-left">Size:</div>
+						<div class="data-left">{data.size}</div>
+					</div>
+				</div>
+			{/if}
 		</div>
 	{/if}
 </main>
@@ -73,6 +99,41 @@
 		top: 0;
 		right: 0;
 		bottom: 0;
+	}
+
+	.file-split {
+		display: flex;
+		height: 100%;
+		padding: 5px;
+
+		.file-info {
+			width: 250px;
+			border:1px solid black;
+			margin-left: 5px;
+			padding: 5px;
+
+			.data-image {
+				border:1px solid black;
+				width: 100%;
+				height: auto;
+			}
+
+			.data {
+				width: 100%;
+				border-bottom: 1px solid black;
+				padding: 5px;
+
+				&-left {
+					padding-right: 5px;
+				}
+
+				&-left,
+				&-right {
+					width: 50%;
+					flex-grow: 1;
+				}
+			}
+		}
 	}
 
 	.directory-selector {
@@ -87,10 +148,10 @@
 	}
 
 	.file-browser {
-		padding: 5px;
 		display: flex;
 		flex-direction: column;
 		height: 100%;
+		flex-grow: 1;
 	}
 
 	.directory-url {
